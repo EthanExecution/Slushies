@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Manage Products</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            background-color: rgb(102, 84, 84);
+        }
+        
+        .product {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #665f5f;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .product img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        
+        .product-name {
+            font-weight: bold;
+        }
+        
+        .product-price {
+            color: green;
+        }
+        
+        .remove-btn,
+        .update-btn {
+            margin-top: 5px;
+            color: white;
+            background-color: red;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .update-btn {
+            background-color: blue;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Admin - Manage Products</h1>
+    <a href="Oders.html" style="color: blue;">Go to Orders</a>
+
+    <!-- Form to add products -->
+    <form id="product-form">
+        <input type="text" id="product-name" placeholder="Product Name" required><br>
+        <input type="number" id="product-price" placeholder="Price (ZAR)" step="0.01" required><br>
+        <input type="number" id="product-quantity" placeholder="Quantity" required><br>
+        <input type="file" id="product-image" accept="image/*" required><br><br>
+        <button type="submit">Add Product</button>
+    </form><br>
+
+    <div id="product-container"></div>
+ 
+    <script>
+        const productContainer = document.getElementById('product-container');
+        const productForm = document.getElementById('product-form');
+        const productNameInput = document.getElementById('product-name');
+        const productPriceInput = document.getElementById('product-price');
+        const productQuantityInput = document.getElementById('product-quantity');
+        const productImageInput = document.getElementById('product-image');
+
+        let products = JSON.parse(localStorage.getItem('products')) || [];
+
+        function renderProducts() {
+            productContainer.innerHTML = '';
+            products.forEach((product, index) => {
+                const productDiv = document.createElement('div');
+                productDiv.classList.add('product');
+
+                productDiv.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <span class="product-name">Name: ${product.name}</span>
+                    <span class="product-price">Price: R${product.price.toFixed(2)}</span>
+                    <span class="product-quantity">Quantity: ${product.quantity}</span>
+                    <input type="number" class="update-quantity" placeholder="New Quantity" min="0">
+                    <button class="update-btn" data-index="${index}">Update Quantity</button>
+                    <button class="remove-btn" data-index="${index}">Remove</button>
+                `;
+
+                productContainer.appendChild(productDiv);
+            });
+
+            // Add event listeners for the "Remove" buttons
+            document.querySelectorAll('.remove-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = e.target.getAttribute('data-index');
+                    products.splice(index, 1);
+                    localStorage.setItem('products', JSON.stringify(products));
+                    renderProducts();
+                });
+            });
+
+            // Add event listeners for the "Update Quantity" buttons
+            document.querySelectorAll('.update-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = e.target.getAttribute('data-index');
+                    const newQuantityInput = productContainer.querySelectorAll('.update-quantity')[index];
+                    const newQuantity = parseInt(newQuantityInput.value, 10);
+
+                    if (!isNaN(newQuantity) && newQuantity >= 0) {
+                        products[index].quantity = newQuantity;
+                        localStorage.setItem('products', JSON.stringify(products));
+                        renderProducts();
+                        alert(`Quantity updated for "${products[index].name}" to ${newQuantity}.`);
+                    } else {
+                        alert('Please enter a valid quantity.');
+                    }
+                });
+            });
+        }
+
+        productForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = productNameInput.value.trim();
+            const price = parseFloat(productPriceInput.value);
+            const quantity = parseInt(productQuantityInput.value, 10);
+            const imageFile = productImageInput.files[0];
+
+            if (name && !isNaN(price) && !isNaN(quantity) && imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const image = event.target.result; // Base64 image data
+                    products.push({
+                        name,
+                        price,
+                        quantity,
+                        image
+                    });
+                    localStorage.setItem('products', JSON.stringify(products));
+                    renderProducts();
+                    productForm.reset();
+                };
+                reader.readAsDataURL(imageFile); // Convert image to Base64
+            }
+        });
+
+        renderProducts();
+    </script>
+</body>
+
+</html>

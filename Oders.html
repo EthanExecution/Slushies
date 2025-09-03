@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place Your Order</title>
+    <style>
+        /* Add your existing styles here */
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            background-color: forestgreen;
+            color: white;
+        }
+        
+        #product-container {
+            background-color: springgreen;
+            display: block;
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        
+        .product {
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px solid #4b4242;
+            border-radius: 10px;
+            background-color: rgb(150, 139, 139);
+            color: black;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .product img {
+            width: 150px;
+            height: 160px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .product-name {
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .product-price {
+            color: navy;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .product-quantity {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .cart {
+            margin-top: 20px;
+            background-color: lime;
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        
+        .cart-item {
+            margin: 10px 0;
+        }
+        
+        #checkout-form {
+            text-align: center;
+        }
+        
+        #checkout-form input,
+        #checkout-form select,
+        #checkout-form button {
+            font-size: 18px;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #2b2828;
+        }
+        
+        #checkout-form button {
+            background-color: rgb(39, 36, 36);
+            color: white;
+        }
+        
+        #payment-details {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            color: black;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+        
+        #payment-details button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #payment-details button:hover {
+            background-color: darkred;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Place Your Order</h1>
+    <a href="Admin.html" style="color: yellow;">Go to Admin</a>
+    <div id="product-container"></div>
+    <div class="cart">
+        <fieldset>
+            <legend>
+                <h2>Your Cart</h2>
+            </legend>
+            <div id="cart-container"></div>
+            <p>Total: R<span id="total-price">0.00</span></p>
+        </fieldset>
+    </div><br>
+
+    <form id="checkout-form">
+        <label for="SurnameInitials">Surname & Initials</label><br>
+        <input type="text" id="surname-initials" placeholder="Surname & Initials" required><br><br>
+        <label for="PaymentMethod">Payment method</label><br>
+        <select id="payment-method" required>
+            <option value="">Select Payment Method</option>
+            <option value="cash">Pay with Cash</option>
+            <option value="card">Pay with Card</option>
+        </select>
+        <div id="card-info" style="display: none;"><br>
+            <p>Card payment selected. Please proceed to the payment details below.</p>
+        </div><br><br>
+        <button type="submit">Generate Invoice</button>
+    </form><br>
+
+    <div id="payment-details">
+        <h2>Capitec Payment Details</h2>
+        <p><strong>Account Holder:</strong> Admin Name</p>
+        <p><strong>Account Number:</strong> 1234567890</p>
+        <p><strong>Cell Number:</strong> 0812345678</p>
+        <p>Please make the payment and confirm with the admin.</p>
+        <button id="cancel-payment">Cancel</button>
+    </div>
+
+    <script>
+        const productContainer = document.getElementById('product-container');
+        const cartContainer = document.getElementById('cart-container');
+        const totalPriceElement = document.getElementById('total-price');
+        const checkoutForm = document.getElementById('checkout-form');
+        const paymentMethod = document.getElementById('payment-method');
+        const cardInfo = document.getElementById('card-info');
+        const paymentDetails = document.getElementById('payment-details');
+        const cancelPaymentButton = document.getElementById('cancel-payment');
+
+        let products = JSON.parse(localStorage.getItem('products')) || [];
+        let cart = [];
+
+        function renderProducts() {
+            productContainer.innerHTML = '';
+            products.forEach((product, index) => {
+                const productDiv = document.createElement('div');
+                productDiv.classList.add('product');
+
+                let buttonHTML = `<button data-index="${index}">Add to Cart</button>`;
+                if (product.quantity === 0) {
+                    buttonHTML = `<button disabled>Sold Out</button>`;
+                }
+
+                productDiv.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <span class="product-name">${product.name}</span>
+                    <span class="product-price">R${product.price.toFixed(2)}</span>
+                    <span class="product-quantity">Quantity: ${product.quantity}</span>
+                    ${buttonHTML}
+                `;
+
+                productContainer.appendChild(productDiv);
+            });
+
+            document.querySelectorAll('.product button:not([disabled])').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = e.target.getAttribute('data-index');
+                    const product = products[index];
+
+                    if (product.quantity > 0) {
+                        cart.push(product);
+                        product.quantity -= 1;
+
+                        if (product.quantity === 5) {
+                            alert(`Warning: Only 5 units of "${product.name}" left!`);
+                        }
+
+                        localStorage.setItem('products', JSON.stringify(products));
+                        renderProducts();
+                        renderCart();
+                    }
+                });
+            });
+        }
+
+        function renderCart() {
+            cartContainer.innerHTML = '';
+            let total = 0;
+            cart.forEach((item) => {
+                total += item.price;
+                const cartItem = document.createElement('div');
+                cartItem.classList.add('cart-item');
+
+                cartItem.innerHTML = `
+                    <span>${item.name} - R${item.price.toFixed(2)}</span>
+                `;
+
+                cartContainer.appendChild(cartItem);
+            });
+            totalPriceElement.textContent = total.toFixed(2);
+        }
+
+        paymentMethod.addEventListener('change', () => {
+            if (paymentMethod.value === 'card') {
+                cardInfo.style.display = 'block';
+            } else {
+                cardInfo.style.display = 'none';
+                paymentDetails.style.display = 'none';
+            }
+        });
+
+        checkoutForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if (paymentMethod.value === 'card') {
+                // Show payment details
+                paymentDetails.style.display = 'block';
+            } else {
+                alert('Order placed successfully!');
+            }
+        });
+
+        cancelPaymentButton.addEventListener('click', () => {
+            paymentDetails.style.display = 'none';
+            checkoutForm.reset();
+        });
+
+        renderProducts();
+    </script>
+</body>
+
+</html>
